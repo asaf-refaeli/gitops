@@ -31,16 +31,12 @@ helm dependency build workloads/platform/argocd
 # Release name and namespace must match bootstrap/apps/argocd.yaml, or Argo CD
 # would install a second copy instead of adopting this one.
 # upgrade --install: installs on the first run, a no-op upgrade on re-runs.
+# --wait: return only when every workload in the release is Ready (server,
+# repo-server, application-controller and redis), without naming them here.
+# On timeout helm fails, and set -e stops the script.
 helm --kube-context "$CTX" upgrade --install argo-cd workloads/platform/argocd \
-  --namespace argocd --create-namespace
-
-echo ">> Waiting for Argo CD..."
-# Names from `helm template argo-cd workloads/platform/argocd`. The root
-# Application needs all three: server (API), repo-server (renders manifests),
-# application-controller (syncs).
-kubectl --context "$CTX" -n argocd rollout status deploy/argo-cd-argocd-server --timeout=300s
-kubectl --context "$CTX" -n argocd rollout status deploy/argo-cd-argocd-repo-server --timeout=300s
-kubectl --context "$CTX" -n argocd rollout status statefulset/argo-cd-argocd-application-controller --timeout=300s
+  --namespace argocd --create-namespace \
+  --wait --timeout 5m
 
 # --- 2. Namespaces + DB Secrets ----------------------------------------------
 # The chart reads the Postgres password from Secret release-notes-db, created
