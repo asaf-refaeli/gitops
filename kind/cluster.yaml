@@ -1,0 +1,22 @@
+# The local cluster that stands in for a real one. Created by
+# scripts/create-cluster.sh; everything inside it comes from Argo CD.
+#
+# One node: the laptop has about 6 GiB for WSL, and a second node would only
+# add overhead. kind names the node container release-notes-control-plane.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    # Pinned by tag AND digest. kind's release notes say the digest is required
+    # to get an image built for that kind release (here kind v0.30.0, whose
+    # default node image is this one). Bump both with the kind version.
+    image: kindest/node:v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a
+    # The only way into the cluster from the host. The node container is a
+    # Docker container, so a port must be published when it is created; it
+    # cannot be added later (create-cluster.sh checks for it).
+    #   localhost:80 -> node :30080 -> Traefik's Service (fixed NodePort 30080,
+    #   set in workloads/platform/traefik/values.yaml).
+    extraPortMappings:
+      - containerPort: 30080
+        hostPort: 80
+        protocol: TCP
