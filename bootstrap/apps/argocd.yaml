@@ -1,0 +1,46 @@
+# Argo CD managing itself. bootstrap.sh installed the wrapper chart with Helm;
+# this Application renders the same folder with the same release name and
+# namespace, so its first sync adopts the running install and changes nothing.
+# From then on, an Argo CD upgrade or config change is a commit to
+# workloads/platform/argocd/.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd
+  namespace: argocd
+  annotations:
+    # After the AppProjects (wave -1). Same wave as gateway-api: independent.
+    argocd.argoproj.io/sync-wave: "0"
+  # No resources-finalizer, on purpose. With it, deleting this Application
+  # (or root, which cascades to it) would delete every resource it manages:
+  # Argo CD itself, mid-operation. Without it, deleting the Application only
+  # stops self-management and leaves Argo CD running.
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/asaf-refaeli/gitops.git
+    targetRevision: main
+    path: workloads/platform/argocd
+    helm:
+      # Must match `helm upgrade --install argo-cd` in bootstrap.sh. Resource
+      # names derive from it (argo-cd-argocd-server, ...); a different name
+      # would create a second Argo CD next to the first.
+      releaseName: argo-cd
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      # Required here: the Application CRD is larger than the 256 KiB
+      # last-applied annotation that client-side apply would add.
+      - ServerSideApply=true
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
