@@ -37,15 +37,13 @@ spec:
     automated:
       prune: true
       selfHeal: true
-    # bootstrap.sh already created the namespace (for the DB Secret); Argo CD
-    # adopts it and adds these labels, so the API server rejects pods that do
-    # not meet the Pod Security "restricted" profile.
+    # Argo CD creates the namespace with these labels, so the API server
+    # rejects pods that do not meet the Pod Security "restricted" profile.
+    # It exists before the chart's PreSync hooks (the DB Secret Job) run.
     managedNamespaceMetadata:
       labels:
         pod-security.kubernetes.io/enforce: restricted
     syncOptions:
-      # Needed for managedNamespaceMetadata to apply, even though the
-      # namespace already exists.
       - CreateNamespace=true
       - ServerSideApply=true
       - PruneLast=true

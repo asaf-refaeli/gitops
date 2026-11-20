@@ -17,8 +17,9 @@ repo holds only the per-environment values. See README.md for the layout.
   kind-release-notes`. The kubeconfig holds other clusters; never touch them.
   Show state-changing commands before running them.
 - **GitOps only:** change Git, not the cluster. The only imperative steps are
-  in `scripts/bootstrap.sh` (Argo CD install, DB Secrets, root apply).
-- **No secrets in Git.** The DB password Secret is created by `bootstrap.sh`.
+  in `scripts/bootstrap.sh` (Argo CD install, root apply).
+- **No secrets in Git.** The DB password Secret is created in the cluster by
+  the release-notes chart (a PreSync Job), only if it is missing.
 - **Environments differ only in** `workloads/apps/release-notes/values-dev.yaml`
   and `values-prod.yaml`. The two Application files differ only in name,
   namespace and values file. Values files use only keys that exist in the

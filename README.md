@@ -8,7 +8,7 @@ reconciles.
 
 ## Quick start
 
-Needs Docker (running), kind, kubectl, helm and openssl.
+Needs Docker (running), kind, kubectl and helm.
 
 ```bash
 ./scripts/up.sh
@@ -39,7 +39,6 @@ passwords are kept.
 up.sh
 ├─ create-cluster.sh   kind cluster "release-notes", host :80 -> node :30080
 └─ bootstrap.sh        helm install Argo CD (wrapper chart in workloads/platform/argocd)
-                       namespaces + Secret release-notes-db (random password, only if missing)
                        kubectl apply -f bootstrap/root.yaml ──┐
                                                               ▼
    Application/root (project default) ── syncs bootstrap/ from Git, recursively
@@ -56,8 +55,10 @@ up.sh
 - Argo CD manages itself: the `argocd` Application renders the same wrapper
   chart as `bootstrap.sh`, with the same release name, so an Argo CD upgrade is
   a commit.
-- The only imperative steps are the Argo CD install, the DB Secrets (a
-  password never goes in Git) and applying `root.yaml`.
+- The only imperative steps are the Argo CD install and applying `root.yaml`.
+- The DB password never goes in Git. Argo CD creates the app namespaces, and
+  the release-notes chart creates Secret `release-notes-db` with a random
+  password in a PreSync Job, only if it is missing (release-notes ADR-0011).
 
 Request path:
 
@@ -105,7 +106,7 @@ kind/cluster.yaml                 node image (tag + digest), port mapping 80 -> 
 scripts/
 ├── up.sh                         create-cluster.sh, then bootstrap.sh
 ├── create-cluster.sh             kind only; keeps an existing cluster
-├── bootstrap.sh                  Argo CD, Secrets, root, wait until Healthy
+├── bootstrap.sh                  Argo CD, root, wait until Healthy
 └── down.sh                       delete the cluster
 bootstrap/                        what Argo CD knows about; root syncs it
 ├── root.yaml                     the GitOps seed

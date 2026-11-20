@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Everything after the cluster exists. Only three imperative actions, all
+# Everything after the cluster exists. Only two imperative actions, both
 # needed before Argo CD can take over:
 #   1. Install Argo CD (it cannot install itself). The argocd Application
 #      adopts this release afterwards, so Git owns it from then on.
-#   2. The DB password Secrets. A password must never be in Git.
-#   3. The root Application, the one GitOps seed.
+#   2. The root Application, the one GitOps seed.
+# Argo CD creates the app namespaces, and the release-notes chart creates its
+# own DB password Secret in the cluster (a PreSync Job), so neither is here.
 # After this, every change is a commit. Safe to re-run.
 set -euo pipefail
 
@@ -13,9 +14,8 @@ cd "$(dirname "$0")/.."
 # Every call names the context explicitly, so the script can never touch
 # another cluster in the kubeconfig, whatever the current context is.
 CTX=kind-release-notes
-ENVS=(dev prod)
 
-for tool in helm kubectl openssl; do
+for tool in helm kubectl; do
   command -v "$tool" >/dev/null || { echo "ERROR: $tool is not installed." >&2; exit 1; }
 done
 
@@ -38,35 +38,11 @@ helm --kube-context "$CTX" upgrade --install argo-cd workloads/platform/argocd \
   --namespace argocd --create-namespace \
   --wait --timeout 5m
 
-# --- 2. Namespaces + DB Secrets ----------------------------------------------
-# The chart reads the Postgres password from Secret release-notes-db, created
-# here and never in Git. The Secret needs its namespace, so the namespace is
-# created here too; Argo CD adopts it later and adds the Pod Security labels.
-for env in "${ENVS[@]}"; do
-  ns="release-notes-$env"
-  if ! kubectl --context "$CTX" get namespace "$ns" >/dev/null 2>&1; then
-    # create, not apply: no client-side-apply annotation and no labels, so
-    # Argo CD's managedNamespaceMetadata can adopt it cleanly (Argo CD docs,
-    # sync options, "Namespace Metadata").
-    kubectl --context "$CTX" create namespace "$ns"
-  fi
-  # Only if missing: Postgres stores the password in its volume on first
-  # start. A new password on a re-run would no longer match it.
-  if ! kubectl --context "$CTX" -n "$ns" get secret release-notes-db >/dev/null 2>&1; then
-    # Hex only (0-9a-f): the chart puts the password inside DATABASE_URL, where
-    # symbols such as @ / : would break the URL. 16 bytes = 128 bits.
-    kubectl --context "$CTX" -n "$ns" create secret generic release-notes-db \
-      --from-literal=password="$(openssl rand -hex 16)"
-  else
-    echo ">> Secret release-notes-db already exists in $ns, keeping it."
-  fi
-done
-
-# --- 3. The GitOps seed --------------------------------------------------------
+# --- 2. The GitOps seed --------------------------------------------------------
 echo ">> Applying the root Application..."
 kubectl --context "$CTX" apply -f bootstrap/root.yaml
 
-# --- 4. Wait until everything is Synced and Healthy -----------------------------
+# --- 3. Wait until everything is Synced and Healthy -----------------------------
 # Expected apps: root plus one per file in bootstrap/apps/ (each file name is
 # its Application name). A new file there is picked up with no script change.
 apps=(root)
@@ -99,7 +75,7 @@ while true; do
   sleep 10
 done
 
-# --- 5. Where to look ------------------------------------------------------------
+# --- 4. Where to look ------------------------------------------------------------
 cat <<EOF
 
 >> Done. Every Application is Synced and Healthy.
