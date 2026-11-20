@@ -1,0 +1,9 @@
+# Values for the upstream chart are nested under its dependency name.
+metrics-server:
+  # Added to the chart's defaultArgs. kind's kubelets serve self-signed
+  # certificates that metrics-server cannot verify, so without this flag every
+  # scrape fails ("x509: cannot validate certificate") and the HPA shows
+  # <unknown>. Local cluster only: a real cluster uses kubelet certificates
+  # signed by the cluster CA and keeps verification on.
+  args:
+    - --kubelet-insecure-tls

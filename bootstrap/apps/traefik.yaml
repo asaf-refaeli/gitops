@@ -1,0 +1,36 @@
+# Traefik, the Gateway API implementation: the GatewayClass "traefik", the
+# Gateway "web" and the proxy that serves it on NodePort 30080 (host :80).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: traefik
+  namespace: argocd
+  annotations:
+    # After gateway-api (wave 0): GatewayClass and Gateway need its CRDs.
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    # Deleting this Application also deletes the resources it deployed.
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/asaf-refaeli/gitops.git
+    targetRevision: main
+    path: workloads/platform/traefik
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: traefik
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

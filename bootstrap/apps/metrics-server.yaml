@@ -1,0 +1,36 @@
+# metrics-server: serves CPU and memory usage (metrics.k8s.io). The prod HPA
+# scales on it, and `kubectl top` reads it. kind does not ship it.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: metrics-server
+  namespace: argocd
+  annotations:
+    # Before release-notes (wave 2), whose prod HPA needs the metrics API.
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    # Deleting this Application also deletes the resources it deployed.
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/asaf-refaeli/gitops.git
+    targetRevision: main
+    path: workloads/platform/metrics-server
+  destination:
+    server: https://kubernetes.default.svc
+    # Where the upstream docs install it; kube-system always exists.
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

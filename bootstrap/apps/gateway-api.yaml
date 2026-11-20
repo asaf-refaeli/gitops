@@ -1,0 +1,41 @@
+# The Gateway API CRDs (GatewayClass, Gateway, HTTPRoute, ...), from the
+# upstream release. Separate from Traefik so one app owns them: Traefik
+# (wave 1) creates a GatewayClass and a Gateway, and the release-notes chart
+# (wave 2) an HTTPRoute, and all of them need these CRDs first.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gateway-api
+  namespace: argocd
+  annotations:
+    # After the AppProjects (wave -1), before traefik (wave 1).
+    argocd.argoproj.io/sync-wave: "0"
+  finalizers:
+    # Deleting this Application also deletes the resources it deployed.
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/asaf-refaeli/gitops.git
+    targetRevision: main
+    path: workloads/platform/gateway-api
+  destination:
+    server: https://kubernetes.default.svc
+    # Everything here is cluster-scoped, so the namespace is never used. It is
+    # set to one the platform project allows.
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      # Required here: the CRDs are larger than the 256 KiB last-applied
+      # annotation that client-side apply would add.
+      - ServerSideApply=true
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
