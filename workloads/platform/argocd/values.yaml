@@ -41,3 +41,39 @@ argo-cd:
   # installed (it ships with the chart), which is harmless.
   applicationSet:
     replicas: 0
+  # The first full sync renders every chart while two Postgres instances, Jobs and image pulls
+  # start at once. With the chart's 1 s probe timeouts and no requests, repo-server and server
+  # missed their probes under that load and were restarted (liveness kill, exit 137).
+  # 5 s timeouts ride out a CPU spike; requests give each component a guaranteed share of the
+  # node instead of whatever is left. No CPU limits (throttling); memory requests only, sized
+  # from idle usage on kind.
+  controller:
+    readinessProbe:
+      timeoutSeconds: 5
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+  repoServer:
+    readinessProbe:
+      timeoutSeconds: 5
+    livenessProbe:
+      timeoutSeconds: 5
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+  server:
+    readinessProbe:
+      timeoutSeconds: 5
+    livenessProbe:
+      timeoutSeconds: 5
+    resources:
+      requests:
+        cpu: 25m
+        memory: 64Mi
+  redis:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
