@@ -141,21 +141,21 @@ gitignored.
 
 ## Resource budget
 
-Sized for an 8 GB laptop where WSL gets about 6 GiB. Estimated idle memory
-on top of the empty kind cluster (about 1 GiB):
+Sized for an 8 GB laptop where WSL gets about 6 GiB. Measured with both
+environments up (`docker stats`, `kubectl top pods -A`): the kind node uses
+about **2.6 GiB**, against about 1 GiB for the empty cluster.
 
-| Component | Memory |
+| Component | Measured memory |
 |---|---|
-| Argo CD (controller, repo-server, server, redis) | 350–500 MiB |
-| Traefik | 50–100 MiB |
-| metrics-server | about 30 MiB |
-| Postgres x2 | 100–200 MiB |
-| App pods: dev 1 + prod 2 (up to 4) | 250–400 MiB, about 600 at the HPA max |
+| kube-apiserver (grows with objects and CRDs) | about 750 MiB |
+| Argo CD (controller, repo-server, server, redis) | about 300 MiB |
+| App pods (about 80 MiB each; prod 2 to 4, dev 1) | 160 to 400 MiB |
+| Postgres x2, Traefik, metrics-server | about 250 MiB |
 
 That is why Argo CD runs without Dex, notifications and the ApplicationSet
 controller, and why prod scales 2 to 4. A real cluster would set replicas
 from load tests. Running out of memory shows up as `OOMKilled` in
-`kubectl describe pod` or a `NotReady` node.
+`kubectl describe pod`, probe timeouts, or a `NotReady` node.
 
 ## Break-glass: Argo CD itself is broken
 
