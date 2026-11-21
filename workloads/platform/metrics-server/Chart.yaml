@@ -1,0 +1,15 @@
+# Wrapper chart around the upstream metrics-server chart. Same shape as
+# workloads/platform/argocd/: Argo CD's repo-server runs `helm dependency
+# build` itself; it needs egress to https://kubernetes-sigs.github.io/metrics-server.
+apiVersion: v2
+name: metrics-server
+description: metrics-server (CPU and memory metrics for the HPA), installed from the upstream chart.
+type: application
+version: 0.1.0
+
+dependencies:
+  - name: metrics-server
+    # Chart 3.14.0 == metrics-server v0.9.0. Pinned: a bump is a reviewable
+    # commit, not a surprise on the next sync.
+    version: 3.14.0
+    repository: https://kubernetes-sigs.github.io/metrics-server

@@ -1,0 +1,17 @@
+# Wrapper chart around the upstream Traefik chart. Same shape as
+# workloads/platform/argocd/: Argo CD detects Helm from this Chart.yaml, and
+# its repo-server runs `helm dependency build` itself; it needs egress to
+# https://traefik.github.io/charts.
+apiVersion: v2
+name: traefik
+description: Traefik as the Gateway API implementation, installed from the upstream chart.
+type: application
+version: 0.1.0
+
+dependencies:
+  - name: traefik
+    # Chart 42.4.1 == Traefik v3.7.19. Pinned: a bump is a reviewable commit,
+    # not a surprise on the next sync. Traefik v3.7 supports Gateway API
+    # v1.6.3, the version pinned in workloads/platform/gateway-api/.
+    version: 42.4.1
+    repository: https://traefik.github.io/charts

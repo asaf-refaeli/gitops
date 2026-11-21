@@ -1,0 +1,65 @@
+# Argo CD project for the platform: Argo CD itself, the Gateway API CRDs,
+# Traefik and metrics-server. Admin-level by nature: it manages the argocd
+# namespace, so anyone who can change its Applications controls Argo CD.
+# Still scoped: one repo, three namespaces, an explicit list of cluster kinds.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform
+  namespace: argocd
+  annotations:
+    # Projects must exist before the Applications that reference them.
+    argocd.argoproj.io/sync-wave: "-1"
+  finalizers:
+    # Argo CD refuses to delete a project that Applications still use.
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: Platform components (Argo CD, Gateway API, Traefik, metrics-server).
+
+  # This repo only. The upstream charts are Chart.yaml dependencies of the
+  # wrapper charts here, and the Gateway API manifest is a remote resource of a
+  # kustomization here, so no upstream repo has to be listed.
+  sourceRepos:
+    - https://github.com/asaf-refaeli/gitops.git
+
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: argocd
+    - server: https://kubernetes.default.svc
+      namespace: traefik
+    # metrics-server, and the (unused) namespace of the cluster-scoped
+    # gateway-api app.
+    - server: https://kubernetes.default.svc
+      namespace: kube-system
+
+  # Namespaced resources: unrestricted within the destinations above.
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+
+  # Cluster-scoped resources: the real guardrail. An explicit allow-list of
+  # what the four charts render (checked with helm template / kustomize);
+  # anything else fails the sync with "not permitted in project platform".
+  clusterResourceWhitelist:
+    # Argo CD syncOption CreateNamespace (namespace traefik).
+    - group: ""
+      kind: Namespace
+    # Argo CD, Traefik and metrics-server RBAC.
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRole
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+    # Argo CD's, Traefik's and the Gateway API CRDs.
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+    # Gateway API standard-install: a policy that blocks unsafe CRD downgrades.
+    - group: admissionregistration.k8s.io
+      kind: ValidatingAdmissionPolicy
+    - group: admissionregistration.k8s.io
+      kind: ValidatingAdmissionPolicyBinding
+    # Traefik's GatewayClass "traefik" (the Gateway itself is namespaced).
+    - group: gateway.networking.k8s.io
+      kind: GatewayClass
+    # metrics-server registers the metrics.k8s.io API.
+    - group: apiregistration.k8s.io
+      kind: APIService

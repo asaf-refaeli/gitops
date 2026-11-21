@@ -1,0 +1,42 @@
+# Argo CD project for the release-notes app. Scoped to exactly what the app
+# needs: its chart repo, this repo (for the env values) and its two
+# namespaces. Anything outside them fails the sync with
+# "namespace <ns> is not permitted in project 'release-notes'".
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: release-notes
+  namespace: argocd
+  annotations:
+    # Projects must exist before the Applications that reference them.
+    argocd.argoproj.io/sync-wave: "-1"
+  finalizers:
+    # Argo CD refuses to delete a project that Applications still use.
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: release-notes (FastAPI app + Postgres), chart from the app repo.
+
+  sourceRepos:
+    # Helm chart, versioned with the app code.
+    - https://github.com/asaf-refaeli/release-notes.git
+    # Environment values ($values source).
+    - https://github.com/asaf-refaeli/gitops.git
+
+  # One namespace per environment. In production each would be its own
+  # cluster, and only `server` would change.
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: release-notes-dev
+    - server: https://kubernetes.default.svc
+      namespace: release-notes-prod
+
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+
+  # Only the Namespace, for CreateNamespace + managedNamespaceMetadata. It is
+  # still limited to the two destinations above. The chart itself renders no
+  # cluster-scoped resources.
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace

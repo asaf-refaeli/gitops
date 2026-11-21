@@ -1,0 +1,67 @@
+# Values for the upstream chart are nested under its dependency name.
+# Only what is required or a deliberate choice; the rest of the chart's
+# defaults are left alone on purpose.
+#
+# Request path: host :80 -> kind node :30080 (kind/cluster.yaml) -> Service
+# NodePort 30080 -> Traefik pod :8000 (entrypoint "web") -> Gateway "web"
+# listener -> HTTPRoute (release-notes chart) -> app Service.
+traefik:
+  providers:
+    # Routes come only from the Gateway API (HTTPRoute). Off, so Traefik does
+    # not watch Ingress objects that nothing here creates.
+    kubernetesIngress:
+      enabled: false
+    # Traefik's Gateway API implementation. Needs the Gateway API CRDs, which
+    # the gateway-api app installs one wave earlier.
+    kubernetesGateway:
+      enabled: true
+
+  # No Ingress provider, so no IngressClass: it would advertise a class that
+  # nothing serves.
+  ingressClass:
+    enabled: false
+
+  # GatewayClass "traefik" (chart default name): tells the cluster that
+  # Gateways of this class are served by Traefik. Chart default, stated
+  # because the platform project has to allow GatewayClass for it.
+  gatewayClass:
+    enabled: true
+
+  # The one Gateway for app traffic, owned by the platform. The release-notes
+  # chart only ships an HTTPRoute that attaches to it (route.gateway.name /
+  # route.gateway.namespace). Created in this release's namespace, traefik.
+  gateway:
+    enabled: true
+    name: web
+    listeners:
+      web:
+        # Traefik's entrypoint port INSIDE the pod (ports.web.port, 8000), not
+        # the Service port 80. Traefik matches a listener to an entrypoint by
+        # this port; the chart fails the render if no entrypoint has it.
+        port: 8000
+        protocol: HTTP
+        # By default only routes in the Gateway's own namespace may attach.
+        # Allow exactly the two app namespaces; an HTTPRoute anywhere else is
+        # refused (its status shows NotAllowedByListeners).
+        namespacePolicy:
+          from: Selector
+          selector:
+            matchExpressions:
+              # Label set by Kubernetes on every namespace.
+              - key: kubernetes.io/metadata.name
+                operator: In
+                values:
+                  - release-notes-dev
+                  - release-notes-prod
+
+  ports:
+    web:
+      # Fixed, because kind/cluster.yaml maps host :80 to exactly this port.
+      # The chart default would be a random NodePort.
+      nodePort: 30080
+
+  service:
+    spec:
+      # kind has no cloud load balancer, so the chart default (LoadBalancer)
+      # would stay <pending>. NodePort plus kind's port mapping does the job.
+      type: NodePort

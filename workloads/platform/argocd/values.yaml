@@ -1,0 +1,43 @@
+# Values for the upstream chart are nested under its dependency name.
+# Only what is required or a deliberate choice; the rest of the chart's
+# defaults are left alone on purpose.
+argo-cd:
+  configs:
+    cm:
+      # Health check for Argo CD's own Application kind, copied from the Argo CD
+      # docs (operator-manual/health.md). Argo CD removed it in v1.8, so by
+      # default a child Application counts as Healthy as soon as it exists.
+      # Root's sync waves need it: without it, wave 1 (traefik) would start
+      # before wave 0 (the Gateway API CRDs) is actually Healthy. With it, the
+      # child's own health status becomes its health in the parent.
+      resource.customizations.health.argoproj.io_Application: |
+        hs = {}
+        hs.status = "Progressing"
+        hs.message = ""
+        if obj.status ~= nil then
+          if obj.status.health ~= nil then
+            hs.status = obj.status.health.status
+            if obj.status.health.message ~= nil then
+              hs.message = obj.status.health.message
+            end
+          end
+        end
+        return hs
+
+  # Off: the components below are unused here, and the laptop's memory is
+  # tight (about 6 GiB for WSL, see the resource budget in README.md).
+
+  # Dex is the SSO bridge. Login is the local admin user only.
+  dex:
+    enabled: false
+
+  # Notifications (Slack, email on sync events). Nothing to notify here.
+  notifications:
+    enabled: false
+
+  # The chart has no "enabled" switch for the ApplicationSet controller, so it
+  # is scaled to zero instead. Every Application here is a plain file in
+  # bootstrap/apps/, so nothing creates ApplicationSets. The CRD stays
+  # installed (it ships with the chart), which is harmless.
+  applicationSet:
+    replicas: 0

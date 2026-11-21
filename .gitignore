@@ -1,0 +1,8 @@
+# Helm dependency build output. Chart.lock IS committed (it pins the resolved
+# version and digest); the downloaded .tgz is not: Argo CD's repo-server runs
+# `helm dependency build` itself on every render, and bootstrap.sh does the
+# same before installing Argo CD.
+workloads/platform/*/charts/
+
+# Local Claude Code session state, not repo content.
+.claude/
