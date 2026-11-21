@@ -43,8 +43,8 @@ up.sh
                                                               ▼
    Application/root (project default) ── syncs bootstrap/ from Git, recursively
      ├─ wave -1  AppProject platform, AppProject release-notes
-     ├─ wave  0  argocd (adopts the Helm install), gateway-api (CRDs)
-     ├─ wave  1  traefik (GatewayClass + Gateway "web"), metrics-server
+     ├─ wave  0  argocd (adopts the Helm install), gateway-api (CRDs), metrics-server
+     ├─ wave  1  traefik (GatewayClass + Gateway "web")
      └─ wave  2  release-notes-dev, release-notes-prod
 ```
 
@@ -118,7 +118,7 @@ bootstrap/                        what Argo CD knows about; root syncs it
     ├── argocd.yaml               wave 0
     ├── gateway-api.yaml          wave 0
     ├── traefik.yaml              wave 1
-    ├── metrics-server.yaml       wave 1
+    ├── metrics-server.yaml       wave 0
     ├── release-notes-dev.yaml    wave 2
     └── release-notes-prod.yaml   wave 2
 workloads/                        what gets deployed

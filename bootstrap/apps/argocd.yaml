@@ -9,7 +9,7 @@ metadata:
   name: argocd
   namespace: argocd
   annotations:
-    # After the AppProjects (wave -1). Same wave as gateway-api: independent.
+    # After the AppProjects (wave -1). Same wave as gateway-api and metrics-server: independent.
     argocd.argoproj.io/sync-wave: "0"
   # No resources-finalizer, on purpose. With it, deleting this Application
   # (or root, which cascades to it) would delete every resource it manages:
