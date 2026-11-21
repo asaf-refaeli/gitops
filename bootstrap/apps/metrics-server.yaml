@@ -14,7 +14,7 @@ metadata:
 spec:
   project: platform
   source:
-    repoURL: https://github.com/asaf-refaeli/gitops.git
+    repoURL: https://github.com/asaf-refaeli/kind-gitops.git
     targetRevision: main
     path: workloads/platform/metrics-server
   destination:

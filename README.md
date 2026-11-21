@@ -1,4 +1,4 @@
-# gitops
+# kind-gitops
 
 GitOps repository for the [release-notes](https://github.com/asaf-refaeli/release-notes)
 service. One command creates a local kind cluster, installs Argo CD and

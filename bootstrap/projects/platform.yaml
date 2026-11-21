@@ -20,7 +20,7 @@ spec:
   # wrapper charts here, and the Gateway API manifest is a remote resource of a
   # kustomization here, so no upstream repo has to be listed.
   sourceRepos:
-    - https://github.com/asaf-refaeli/gitops.git
+    - https://github.com/asaf-refaeli/kind-gitops.git
 
   destinations:
     - server: https://kubernetes.default.svc

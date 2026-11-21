@@ -20,7 +20,7 @@ spec:
     # Helm chart, versioned with the app code.
     - https://github.com/asaf-refaeli/release-notes.git
     # Environment values ($values source).
-    - https://github.com/asaf-refaeli/gitops.git
+    - https://github.com/asaf-refaeli/kind-gitops.git
 
   # One namespace per environment. In production each would be its own
   # cluster, and only `server` would change.
