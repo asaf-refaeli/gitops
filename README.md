@@ -31,7 +31,9 @@ port-forward command and how to read the admin password.
 ```
 
 Re-running `up.sh` is safe: the cluster, the Argo CD install and the database
-passwords are kept.
+passwords are kept. Argo CD is installed with Helm only on the first run; after
+that the `argocd` Application owns it, so Argo CD changes are commits to
+`workloads/platform/argocd/`.
 
 ## How it works
 
@@ -154,6 +156,19 @@ That is why Argo CD runs without Dex, notifications and the ApplicationSet
 controller, and why prod scales 2 to 4. A real cluster would set replicas
 from load tests. Running out of memory shows up as `OOMKilled` in
 `kubectl describe pod` or a `NotReady` node.
+
+## Break-glass: Argo CD itself is broken
+
+If a bad commit to `workloads/platform/argocd/` stops Argo CD, nothing is left to
+apply the fix. Revert the commit in Git, then apply the good values by hand once:
+
+```bash
+helm --kube-context kind-release-notes upgrade argo-cd workloads/platform/argocd \
+  -n argocd --force-conflicts
+```
+
+`--force-conflicts` takes the fields back from Argo CD's field manager. Once Argo
+CD runs again, it syncs from Git and owns them again.
 
 ## Troubleshooting
 
