@@ -139,24 +139,6 @@ every Application's source is this repo. Argo CD's repo-server runs
 `helm dependency build` itself; the downloaded `charts/` folders are
 gitignored.
 
-## Resource budget
-
-Sized for an 8 GB laptop where WSL gets about 6 GiB. Measured with both
-environments up (`docker stats`, `kubectl top pods -A`): the kind node uses
-about **2.6 GiB**, against about 1 GiB for the empty cluster.
-
-| Component | Measured memory |
-|---|---|
-| kube-apiserver (grows with objects and CRDs) | about 750 MiB |
-| Argo CD (controller, repo-server, server, redis) | about 300 MiB |
-| App pods (about 80 MiB each; prod 2 to 4, dev 1) | 160 to 400 MiB |
-| Postgres x2, Traefik, metrics-server | about 250 MiB |
-
-That is why Argo CD runs without Dex, notifications and the ApplicationSet
-controller, and why prod scales 2 to 4. A real cluster would set replicas
-from load tests. Running out of memory shows up as `OOMKilled` in
-`kubectl describe pod`, probe timeouts, or a `NotReady` node.
-
 ## Break-glass: Argo CD itself is broken
 
 If a bad commit to `workloads/platform/argocd/` stops Argo CD, nothing is left to

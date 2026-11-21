@@ -25,7 +25,7 @@ argo-cd:
         return hs
 
   # Off: the components below are unused here, and the laptop's memory is
-  # tight (about 6 GiB for WSL, see the resource budget in README.md).
+  # tight (about 6 GiB for WSL on an 8 GB laptop).
 
   # Dex is the SSO bridge. Login is the local admin user only.
   dex:
