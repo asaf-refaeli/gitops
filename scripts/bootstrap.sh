@@ -20,23 +20,29 @@ for tool in helm kubectl; do
 done
 
 # --- 1. Argo CD ---------------------------------------------------------------
-echo ">> Installing Argo CD..."
-# `helm dependency build` refuses a Chart.lock whose repository is not
-# registered locally ("no repository definition"), so register it first.
-# --force-update makes a re-run a no-op instead of an error.
-helm repo add argo https://argoproj.github.io/argo-helm --force-update
-# Downloads the pinned upstream chart into charts/ (gitignored), exactly the
-# version and digest in Chart.lock.
-helm dependency build workloads/platform/argocd
-# Release name and namespace must match bootstrap/apps/argocd.yaml, or Argo CD
-# would install a second copy instead of adopting this one.
-# upgrade --install: installs on the first run, a no-op upgrade on re-runs.
-# --wait: return only when every workload in the release is Ready (server,
-# repo-server, application-controller and redis), without naming them here.
-# On timeout helm fails, and set -e stops the script.
-helm --kube-context "$CTX" upgrade --install argo-cd workloads/platform/argocd \
-  --namespace argocd --create-namespace \
-  --wait --timeout 5m
+# Installed once. After the first sync the argocd Application owns these objects
+# (server-side apply, field manager "argocd-controller"), so a later helm upgrade
+# would conflict with it and fight Git. Re-runs skip this step; Argo CD changes
+# are commits. Break-glass if a bad commit ever stops Argo CD: README, "Argo CD".
+if helm --kube-context "$CTX" status argo-cd --namespace argocd >/dev/null 2>&1; then
+  echo ">> Argo CD already installed; the argocd Application owns it (Git)."
+else
+  echo ">> Installing Argo CD..."
+  # `helm dependency build` refuses a Chart.lock whose repository is not
+  # registered locally ("no repository definition"), so register it first.
+  helm repo add argo https://argoproj.github.io/argo-helm --force-update
+  # Downloads the pinned upstream chart into charts/ (gitignored), exactly the
+  # version and digest in Chart.lock.
+  helm dependency build workloads/platform/argocd
+  # Release name and namespace must match bootstrap/apps/argocd.yaml, or Argo CD
+  # would install a second copy instead of adopting this one.
+  # --wait: return only when every workload in the release is Ready (server,
+  # repo-server, application-controller and redis). On timeout helm fails, and
+  # set -e stops the script.
+  helm --kube-context "$CTX" install argo-cd workloads/platform/argocd \
+    --namespace argocd --create-namespace \
+    --wait --timeout 5m
+fi
 
 # --- 2. The GitOps seed --------------------------------------------------------
 echo ">> Applying the root Application..."
