@@ -7,8 +7,8 @@ metadata:
   name: release-notes-dev
   namespace: argocd
   annotations:
-    # Last: needs the Gateway (traefik) for its HTTPRoute and the metrics API
-    # (metrics-server), both wave 1.
+    # Last: needs the Gateway (traefik, wave 1) for its HTTPRoute and the
+    # metrics API (metrics-server, wave 0).
     argocd.argoproj.io/sync-wave: "2"
   finalizers:
     # Deleting this Application also deletes the resources it deployed.

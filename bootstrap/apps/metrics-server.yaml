@@ -6,8 +6,9 @@ metadata:
   name: metrics-server
   namespace: argocd
   annotations:
-    # Before release-notes (wave 2), whose prod HPA needs the metrics API.
-    argocd.argoproj.io/sync-wave: "1"
+    # No dependencies, so the first wave. Must be ready before release-notes
+    # (wave 2), whose prod HPA needs the metrics API.
+    argocd.argoproj.io/sync-wave: "0"
   finalizers:
     # Deleting this Application also deletes the resources it deployed.
     - resources-finalizer.argocd.argoproj.io
