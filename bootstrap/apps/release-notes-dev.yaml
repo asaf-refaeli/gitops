@@ -27,7 +27,7 @@ spec:
         valueFiles:
           - $values/workloads/apps/release-notes/values-dev.yaml
     # This repo, only as the source of the values file; nothing is rendered from it.
-    - repoURL: https://github.com/asaf-refaeli/gitops.git
+    - repoURL: https://github.com/asaf-refaeli/kind-gitops.git
       targetRevision: main
       ref: values
   destination:

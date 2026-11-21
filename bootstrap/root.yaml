@@ -25,7 +25,7 @@ spec:
   # 'platform' and 'release-notes' projects are created by this app.
   project: default
   source:
-    repoURL: https://github.com/asaf-refaeli/gitops.git
+    repoURL: https://github.com/asaf-refaeli/kind-gitops.git
     targetRevision: main
     path: bootstrap
     directory:
